@@ -1,0 +1,121 @@
+#! /bin/sh
+set -eu
+
+# Sets the prompt command to use.
+PROMPT_COMMAND="${PROMPT_COMMAND:-bemenu -i}"
+
+# SYNOPSIS
+#
+# Returns a list of desktop entries and their names separated by `:Name=`. Will
+# do nothing if the directory does not exists.
+#
+# USAGE
+#
+#     _list_desktop_entries_in_dir <dir>
+#
+# EXAMPLE OUTPUT
+#
+# Executing:
+#
+#     _list_desktop_entries_in_dir /usr/share/applications/
+#
+# Will print:
+#
+#     /usr/share/applications/Alacritty.desktop:Name=Alacritty
+#     /usr/share/applications/firefox.desktop:Name=Firefox Web Browser
+#
+_list_desktop_entries_in_dir() {
+    if [ -d "${1}" ]; then
+        grep -r --include "*.desktop" -m 1 '^Name=' "${1}"
+    fi
+}
+
+# SYNOPSIS
+#
+# Returns the complete list of user-specific and system-wide desktop entries and
+# their names separated by `:Name=`.
+#
+# This function will print user-specific desktop entries first to give them a
+# higher precedence over system-wide desktop entries.
+#
+# USAGE
+#
+#     _list_desktop_entries
+#
+# EXAMPLE OUTPUT
+#
+# Executing:
+#
+#     _list_desktop_entries
+#
+# Will print:
+#
+#     /usr/share/applications/Alacritty.desktop:Name=Alacritty
+#     /usr/share/applications/firefox.desktop:Name=Firefox Web Browser
+#
+_list_desktop_entries() {
+    _list_desktop_entries_in_dir "$HOME/.local/share/applications"
+    _list_desktop_entries_in_dir /usr/share/applications
+}
+
+# SYNOPSIS
+#
+# Executes an interactive prompt listing the name for each desktop entry.
+#
+# USAGE
+#
+#     _list_desktop_entries | _prompt_desktop_entry
+#
+# EXAMPLE
+#
+# Given the input:
+#
+#     /usr/share/applications/Alacritty.desktop:Name=Alacritty
+#     /usr/share/applications/firefox.desktop:Name=Firefox Web Browser
+#
+# This command will open an interactive prompt providing the following options:
+#
+#     Alacritty
+#     Firefox Web Browser
+#
+# Returning the one selected by the user.
+#
+_prompt_desktop_entry() {
+    cut -d = -f 2- | $PROMPT_COMMAND
+}
+
+
+# SYNOPSIS
+#
+# Given the name of a desktop entry, returns the path to such desktop entry.
+#
+# USAGE
+#
+#     _list_desktop_entries | _get_desktop_entry_by_name <NAME>
+#
+# EXAMPLE
+#
+# Given the STDIN:
+#
+#     /usr/share/applications/Alacritty.desktop:Name=Alacritty
+#     /usr/share/applications/firefox.desktop:Name=Firefox Web Browser
+#
+# Calling:
+# 
+#     ... | _get_desktop_entry_by_name "Alacritty"
+#
+# Will return:
+#
+#     /usr/share/applications/Alacritty.desktop
+#
+_get_desktop_entry_by_name() {
+    grep -m 1 -F ":Name=${1}" | cut -f 1 -d :
+}
+
+main() {
+    name="$( _list_desktop_entries | _prompt_desktop_entry )"
+    entry="$( _list_desktop_entries | _get_desktop_entry_by_name "${name}" )"
+    exec dex "${entry}"
+}
+
+main
