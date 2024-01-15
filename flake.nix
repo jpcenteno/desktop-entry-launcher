@@ -1,5 +1,5 @@
 {
-  description = "A simple launcher for desktop applications";
+  description = "A simple launcher wrapper for XDG desktop applications";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs";
