@@ -4,6 +4,8 @@ set -eu
 # Sets the prompt command to use.
 PROMPT_COMMAND="${PROMPT_COMMAND:-bemenu -i}"
 
+DESKTOP_ENTRY_DIRECTORIES="${XDG_DATA_HOME}:${XDG_DATA_DIRS}"
+
 # SYNOPSIS
 #
 # Returns a list of desktop entries and their names separated by `:Name=`. Will
@@ -26,7 +28,12 @@ PROMPT_COMMAND="${PROMPT_COMMAND:-bemenu -i}"
 #
 _list_desktop_entries_in_dir() {
     if [ -d "${1}" ]; then
-        grep -r --include "*.desktop" -m 1 '^Name=' "${1}"
+        # - Use -R (AKA --dereference-recursive) to follow symlinks. This will
+        #   otherwise ignore Nix entries.
+        # - The `$? = 1` test prevents the program from crashing (due to
+        #   `set -e`) in case a directory exists, but does not have any matching
+        #   file.
+        grep -R --include "*.desktop" -m 1 '^Name=' "${1}" || test "$?" = 1
     fi
 }
 
@@ -54,8 +61,11 @@ _list_desktop_entries_in_dir() {
 #     /usr/share/applications/firefox.desktop:Name=Firefox Web Browser
 #
 _list_desktop_entries() {
-    _list_desktop_entries_in_dir "$HOME/.local/share/applications"
-    _list_desktop_entries_in_dir /usr/share/applications
+    IFS=':'
+    for dir in ${DESKTOP_ENTRY_DIRECTORIES}; do
+        echo DIR = $dir 1>&2
+        _list_desktop_entries_in_dir "${dir}"
+    done
 }
 
 # SYNOPSIS
