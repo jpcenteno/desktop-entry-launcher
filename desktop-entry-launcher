@@ -63,8 +63,8 @@ _list_desktop_entries_in_dir() {
 _list_desktop_entries() {
     IFS=':'
     for dir in ${DESKTOP_ENTRY_DIRECTORIES}; do
-        echo DIR = $dir 1>&2
-        _list_desktop_entries_in_dir "${dir}"
+        # echo DIR = $dir 1>&2
+        _list_desktop_entries_in_dir "${dir}/applications"
     done
 }
 
